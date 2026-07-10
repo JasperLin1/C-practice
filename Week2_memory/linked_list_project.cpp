@@ -23,7 +23,27 @@ struct Node {
 //   4. 將最末端節點的 next 指向新節點：`temp->next = newNode;`。
 // [在此寫下你的 insert 函式]
 void insert(Node*& head, int val) {
+    // 1. 創建要接上去的新車廂 (new Node)
+    Node* newNode = new Node;
+    newNode->data = val;
+    newNode->next = nullptr;
 
+    // 2. 判斷火車是不是空的
+    if (head == nullptr) {
+        head = newNode; // 空的話，新車廂就是火車頭
+    } else {
+        // 3. 不為空時，我們需要一個「臨時紙條」來幫忙走訪到最後一站。
+        // 注意：千萬不要在這裡寫 `new Node`，因為我們只是要建立一條「指向已有車廂的臨時紙條」，不是要造新車廂。
+        Node* temp = head; 
+        
+        // 4. 只要「下一站不是 nullptr」，就一直往前走
+        while (temp->next != nullptr) {
+            temp = temp->next; // 走向下一站
+        }
+        
+        // 5. 走到最後一節車廂了，把它的 next 接上新車廂
+        temp->next = newNode;
+    }
 }
 
 // TODO 2: 在鏈結串列中尋找特定的數值
@@ -33,9 +53,20 @@ void insert(Node*& head, int val) {
 // - 如果遍歷完整個串列都沒找到，回傳 false。
 // [在此寫下你的 search 函式]
 bool search(Node* head, int target) {
+    // 說明：搜尋是唯讀的，不要在這裡 new Node 造新車廂！
+    // 我們只需要一張臨時紙條 current，指向頭部開始往後找
+    Node* current = head; 
 
-    return false; // 暫時回傳 false，請修改它
+    while (current != nullptr) {
+        if (current->data == target) {
+            return true; // 找到了！
+        }
+        current = current->next; // 移到下一站
+    }
+    
+    return false; // 找遍了所有車廂都沒找到
 }
+
 
 // TODO 3: 釋放鏈結串列中所有節點的記憶體
 // 提示：
@@ -43,7 +74,18 @@ bool search(Node* head, int target) {
 // - 釋放完所有節點後，記得將 `head` 設為 `nullptr`，防止它變成懸空指標！
 // [在此寫下你的 clear 函式]
 void clear(Node*& head) {
-
+    // 說明：這裡確確實實是要「delete current」！
+    // 因為如果只寫 `delete head;`，我們只刪除了第一節車廂，後面的車廂全都會遺失並殘留在記憶體中。
+    
+    Node* current = head;
+    while (current != nullptr) {
+        Node* nextNode = current->next; // 先記住下一站的地址
+        delete current;                // 釋放當前車廂 (delete current 是完全正確的！)
+        current = nextNode;            // 走向下一站
+    }
+    
+    // 所有車廂都刪完了，把火車頭指標清空
+    head = nullptr; 
 }
 
 // 輔助函式：印出整條鏈結串列 (已幫你寫好)
