@@ -20,65 +20,59 @@ private:
 
 public:
     // TODO 1: 實作建構子 (Constructor)
-    // 提示：
-    // - 接收一個參數 `int cap` 代表容量。
-    // - 初始化 `capacity = cap;`。
-    // - 初始化 `topIndex = -1;` (代表一開始沒有任何資料)。
-    // - 在 Heap 中動態配置一個大小為 capacity 的整數陣列，並讓 `arr` 指向它。
-    // [在此寫下建構子代碼]
     Stack(int cap) {
-        
+        capacity = cap;
+        topIndex = -1;
+        // 關鍵修正：直接使用成員變數 arr，不要在前面加上 int*！
+        // 如果寫了 int* arr，會宣告出一個「全新的局部指標」，這會導致原本的成員變數 arr 依然是空指針，並且造成記憶體洩漏。
+        arr = new int[capacity]; 
     }
 
     // TODO 2: 實作解構子 (Destructor)
-    // 提示：
-    // - 當 Stack 物件死亡時，必須主動釋放內部動態配置的陣列記憶體，防止記憶體洩漏！
-    // - 使用 `delete[] arr;`。
-    // [在此寫下解構子代碼]
     ~Stack() {
-        
+        delete[] arr;
+        arr = nullptr;
     }
 
     // TODO 3: 實作 Push (將資料壓入堆疊)
-    // 提示：
-    // - 函數名稱：`void push(int val)`。
-    // - 先檢查堆疊是否滿了：如果 `topIndex == capacity - 1`，印出 "Stack Overflow!" 並直接結束。
-    // - 如果沒滿：將 `topIndex` 加 1，然後把 `val` 放入陣列的該位置：`arr[topIndex] = val;`。
-    // [在此寫下 push 函式]
     void push(int val) {
-        
+        if(topIndex >= capacity - 1){
+            std::cout << "Stack Overflow!" << std::endl;
+        }else{
+            topIndex++;
+            arr[topIndex] = val;
+        }
     }
 
     // TODO 4: 實作 Pop (將最上方資料彈出並回傳)
-    // 提示：
-    // - 函數名稱：`int pop()`。
-    // - 先檢查堆疊是否為空：如果 `isEmpty()` 為真，印出 "Stack Underflow!" 並回傳 -1。
-    // - 如果不為空：
-    //   1. 先用一個變數記錄最上方的數值：`int topVal = arr[topIndex];`
-    //   2. 將 `topIndex` 減 1 (代表最上方的資料被移除了)。
-    //   3. 回傳剛才記錄的 `topVal`。
-    // [在此寫下 pop 函式]
     int pop() {
-        return 0; // 請修改它
+        // 關鍵修正：在類別內部的成員函式，直接呼叫 `isEmpty()` 即可，不需要寫 `arr.` 或 `Stack.`
+        if (isEmpty()) {
+            std::cout << "Stack Underflow!" << std::endl;
+            return -1; // 發生錯誤時回傳 -1
+        } else {
+            int topVal = arr[topIndex];
+            // 關鍵修正：用 `topIndex--` 或是 `topIndex = topIndex - 1;` 才能修改變數的值。
+            // 只寫 `topIndex - 1;` 電腦只是算了一下，並不會把值存回去！
+            topIndex--; 
+            return topVal; 
+        }
     }
 
     // TODO 5: 實作 Peek/Top (只看最上方資料，但不彈出)
-    // 提示：
-    // - 函數名稱：`int peek()`。
-    // - 如果堆疊為空，回傳 -1。
-    // - 否則，回傳目前最上方位置的資料：`arr[topIndex]`。
-    // [在此寫下 peek 函式]
     int peek() {
-        return 0; // 請修改它
+        // 關鍵修正：直接呼叫同一個類別內部的 `isEmpty()` 即可！
+        if (isEmpty()) { 
+            return -1;
+        } else {
+            return arr[topIndex]; 
+        }
     }
 
     // TODO 6: 實作判斷是否為空的公開函式
-    // 提示：
-    // - 函數名稱：`bool isEmpty()`。
-    // - 當 `topIndex == -1` 時回傳 true，否則回傳 false。
-    // [在此寫下 isEmpty 函式]
     bool isEmpty() {
-        return false; // 請修改它
+        // 說明：這是一個「判斷」，使用 if 或者直接 return 關係式即可，不需要使用 while 迴圈。
+        return topIndex == -1; // 當 topIndex 是 -1 時回傳 true，否則回傳 false
     }
 };
 
@@ -101,14 +95,12 @@ int main() {
 
     std::cout << "\n--- 測試 Pop (後進先出彈出資料) ---" << std::endl;
     // 解除下方註解進行測試：
-    /*
     while (!myStack.isEmpty()) {
         std::cout << "彈出資料: " << myStack.pop() << std::endl;
     }
-    */
 
     // 再次嘗試彈出 (應該會顯示 Stack Underflow!)
-    // std::cout << "再次嘗試彈出: " << myStack.pop() << std::endl;
+    std::cout << "再次嘗試彈出: " << myStack.pop() << std::endl;
 
     return 0;
 }
