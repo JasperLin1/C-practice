@@ -66,17 +66,19 @@ public:
         capacity = cap;
         topIndex = -1;
         // [在此寫下動態配置代碼]
+        arr = new T[capacity];
         
     }
 
     // TODO 2: 實作模板解構子
     ~TemplateStack() {
         // [在此寫下釋放記憶體代碼]
-        
+        delete [] arr;
+        arr = nullptr;
     }
 
     // TODO 3: 實作模板 Push 函式
-    // 提示：接收參數型態為 T 的 `val`
+    // 提示：接收參數型態為 T 的 `val` ,你不是已經寫好了 TODO 3和4 了 我還要寫甚麼?
     void push(T val) {
         if (topIndex >= capacity - 1) {
             std::cout << "Stack Overflow!" << std::endl;
@@ -84,6 +86,7 @@ public:
             topIndex++;
             arr[topIndex] = val;
         }
+        
     }
 
     // TODO 4: 實作模板 Pop 函式
@@ -125,11 +128,9 @@ int main() {
     // TODO 5: 宣告一個可以裝「字串 std::string」的 TemplateStack，容量設為 3。
     // 提示：語法為 `TemplateStack<型態> 變數名(容量);`
     // [在此寫下宣告代碼]
+    TemplateStack<std::string> strStack(3);
 
-
-    // 測試推入字串
-    // 解除下方註解來測試：
-    /*
+   
     std::cout << "--- 正在推入字串資料到堆疊 ---" << std::endl;
     strStack.push("蘋果");
     strStack.push("香蕉");
@@ -139,7 +140,7 @@ int main() {
     while (!strStack.isEmpty()) {
         std::cout << "彈出: " << strStack.pop() << std::endl;
     }
-    */
+    
 
     return 0;
 }
