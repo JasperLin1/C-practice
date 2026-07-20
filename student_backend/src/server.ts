@@ -12,7 +12,7 @@ import cors from 'cors';
 import studentRouter from './routes/studentRoutes'; // 載入我們即將編寫的學生部門路由
 
 const app = express();
-const PORT = 5000;
+const PORT = 5001; // 改為 5001 埠口，避免與其他運行的後端服務衝突 (例如 5000)
 
 // 1. 全域中間件
 app.use(cors());
