@@ -21,6 +21,9 @@ function App() {
   const [inputId, setInputId] = useState('');
   const [inputName, setInputName] = useState('');
   const [inputScore, setInputScore] = useState('');
+  // 宣告兩位新成員，用來紀錄「目前正在編輯哪一位學生的學號」以及「編輯中的新分數」
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingScore, setEditingScore] = useState('');
 
   // 定義一個專門向後端拿資料的函式 `fetchStudents`
   const fetchStudents = () => {
@@ -75,38 +78,167 @@ function App() {
     })
     .then(res => res.json())
     .then(data => {
-      alert(data.message); // 顯示「刪除成功！」
-      fetchStudents();     // 重新向後端抓取最新資料，畫面上的該學生就會 disappear！
+      alert(data.message);
+      fetchStudents();
     });
   };
 
-  // App 組件的渲染 HTML 區塊
+  // 第 75-84 行：定義按下「儲存成績」時會發生的處理函式 `handleUpdateScore`
+  const handleUpdateScore = (id: string) => {
+    fetch(`http://localhost:5001/api/students/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: Number(editingScore) })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message);
+      setEditingId(null);
+      fetchStudents();
+    });
+  };
+
+  // 📊 【Senior 進階功能】：動態數據統計計算 (Derived State)
+  const totalCount = students.length;
+  // 1. 計算全班平均分數
+  const avgScore = totalCount > 0 
+    ? Math.round((students.reduce((sum, s) => sum + s.score, 0) / totalCount) * 10) / 10 
+    : 0;
+  // 2. 計算及格率 (分數 >= 60)
+  const passCount = students.filter(s => s.score >= 60).length;
+  const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
+  // 3. 找出全班最高分與最低分學生
+  const highestStudent = totalCount > 0 ? [...students].sort((a, b) => b.score - a.score)[0] : null;
+  const lowestStudent = totalCount > 0 ? [...students].sort((a, b) => a.score - b.score)[0] : null;
+
+  // 💡 【解答你的發問】：這個邏輯要寫在哪裡？
+  // 答案：寫在 App() 內部、return(...) 的「外面」！
+  // 因為條件判斷 (if-else) 是純 JavaScript 的邏輯運算，不能直接放在 JSX return 裡面。
+  let lowestCardTitle = "需要加強 (最低分) ⚠️";
+  let lowestCardSubText = "";
+  let lowestCardColor = "var(--danger)"; // 預設紅色警告
+
+  if (!lowestStudent) {
+    lowestCardTitle = "需要加強 (最低分)";
+    lowestCardSubText = "目前無資料";
+    lowestCardColor = "var(--text-muted)";
+  } else if (lowestStudent.score >= 80) {
+    // 情境 B：所有人都在 80 分以上
+    lowestCardTitle = "表現優異 🎉";
+    lowestCardSubText = "全員皆達 80 分以上，目前無需加強！";
+    lowestCardColor = "var(--success)"; // 綠色
+  } else if (lowestStudent.score >= 60) {
+    // 情境 C：無人不及格，但有人介於 60~79 分
+    lowestCardTitle = "觀察對象 (60-79分) 💡";
+    lowestCardSubText = `[${lowestStudent.id}] ${lowestStudent.name}`;
+    lowestCardColor = "var(--warning)"; // 黃色警告
+  } else {
+    // 情境 D：有人不及格 (< 60 分)
+    lowestCardTitle = "需要加強 (不及格) ⚠️";
+    lowestCardSubText = `[${lowestStudent.id}] ${lowestStudent.name}`;
+    lowestCardColor = "var(--danger)"; // 紅色警告
+  }
+
   return (
     <div className="dashboard-container">
       {/* 頁首標題 */}
       <header>
-        <span style={{ fontSize: '24px', fontWeight: 'bold' }}>
-          學生成績管理系統 (全端版)
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '24px', fontWeight: 'bold' }} className="text-gradient">
+            Senior GradeManager™ (全端整合版)
+          </span>
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+          後端連线: <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>● 已連線 Port 5001</span> (students.json)
+        </div>
       </header>
+
+      {/* 📊 頂部數據統計面板 (Glassmorphism 玻璃卡片區塊) */}
+      <section className="stats-grid animate-fade-in" style={{ marginTop: '24px' }}>
+        {/* 平均分數卡片 */}
+        <div className="glass-card stat-card">
+          <span className="stat-label">全班平均成績</span>
+          <span className="stat-value">{avgScore} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>分</span></span>
+          <span className="stat-sub">總參與人數: {totalCount} 人</span>
+        </div>
+
+        {/* 及格率卡片 (帶動態進度條) */}
+        <div className="glass-card stat-card purple">
+          <span className="stat-label">及格率 (&ge; 60分)</span>
+          <span className="stat-value">{passRate} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>%</span></span>
+          <div className="progress-bar-container">
+            <div className="progress-bar" style={{ width: `${passRate}%` }}></div>
+          </div>
+          <span className="stat-sub">及格: {passCount} 人 / 不及格: {totalCount - passCount} 人</span>
+        </div>
+
+        {/* 最高分卡片 */}
+        <div className="glass-card stat-card blue">
+          <span className="stat-label">全班最高分 🏆</span>
+          <span className="stat-value">
+            {highestStudent ? highestStudent.score : '--'} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>分</span>
+          </span>
+          <span className="stat-sub" style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>
+            {highestStudent ? `[${highestStudent.id}] ${highestStudent.name}` : '目前無資料'}
+          </span>
+        </div>
+
+        {/* 第 4 張卡片：動態顯示最低分 / 觀察對象 / 全員優異 */}
+        <div className="glass-card stat-card">
+          <span className="stat-label">{lowestCardTitle}</span>
+          <span className="stat-value">
+            {lowestStudent ? lowestStudent.score : '--'} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>分</span>
+          </span>
+          <span className="stat-sub" style={{ color: lowestCardColor, fontWeight: 600 }}>
+            {lowestCardSubText}
+          </span>
+        </div>
+      </section>
 
       {/* 主要內容區 */}
       <main style={{ marginTop: '24px' }}>
-        {/* 動態顯示目前陣列的長度 (人數) */}
-        <h2>學生人數: {students.length} 人</h2>
-
-        {/* 使用 .map() 陣列迴圈，將 `students` 中的每位學生轉化成一個 <div> 畫在網頁上 */}
+        {/* 顯示學生清單與編輯/刪除按鈕 */}
         {students.map(s => (
-          // key={s.id} 是 React 規定：迴圈畫出來的元素必須給予唯一的 key，效能才會好
           <div key={s.id} style={{ padding:'8px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* 顯示學號、姓名與分數 */}
-            <span>學號: {s.id} | 姓名: {s.name} | 分數: {s.score}</span>
+            <span>
+              學號: {s.id} | 姓名: {s.name} | 分數: 
+              {/* 如果目前的 s.id 等於正在編輯的 editingId，就渲染輸入框，否則顯示原本的分數數字 */}
+              {editingId === s.id ? (
+                <input 
+                  type="number" 
+                  value={editingScore} 
+                  onChange={(e) => setEditingScore(e.target.value)} 
+                  style={{ width: '60px', marginLeft: '8px' }}
+                />
+              ) : (
+                ` ${s.score}`
+              )}
+            </span>
             
-            {/* 關鍵修正：刪除按鈕必須放在迴圈內部！才能知道目前這行是要刪除哪一位學生 s.id */}
-            {/* 使用 () => handleDelete(s.id) 綁定點擊事件，只有在「按下」時才會觸發！ */}
-            <button onClick={() => handleDelete(s.id)} style={{ color: 'red', cursor: 'pointer', padding: '4px 8px' }}>
-              刪除
-            </button>
+            <div>
+              {/* 如果正在編輯這一行，顯示「儲存」按鈕；否則顯示「修改分數」與「刪除」按鈕 */}
+              {editingId === s.id ? (
+                <button onClick={() => handleUpdateScore(s.id)} style={{ color: 'green', cursor: 'pointer', marginRight: '8px' }}>
+                  儲存
+                </button>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setEditingId(s.id);
+                    setEditingScore(String(s.score));
+                  }} 
+                  style={{ marginRight: '8px', cursor: 'pointer' }}
+                >
+                  修改分數
+                </button>
+              )}
+
+              {/* 關鍵修正：刪除按鈕必須放在迴圈內部！才能知道目前這行是要刪除哪一位學生 s.id */}
+              {/* 使用 () => handleDelete(s.id) 綁定點擊事件，只有在「按下」時才會觸發！ */}
+              <button onClick={() => handleDelete(s.id)} style={{ color: 'red', cursor: 'pointer', padding: '4px 8px' }}>
+                刪除
+              </button>
+            </div>
           </div>
         ))}
 
